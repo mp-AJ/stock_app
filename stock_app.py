@@ -29,7 +29,7 @@ STOCK_LIST = {
 # ---------------------------
 st.set_page_config(page_title="Indian Stock Predictor", layout="centered")
 st.title("📈 Indian Stock Price Predictor")
-st.markdown("Predict the next 7 days of stock prices using historical data.")
+st.markdown("Predict the next 7 days of stock prices using recent trends.")
 
 selected_stock = st.selectbox("Choose a stock:", list(STOCK_LIST.keys()))
 symbol = STOCK_LIST[selected_stock]
@@ -53,50 +53,52 @@ if df is None or df.empty:
     st.error("⚠️ No data found for this stock. Try another.")
 elif 'Close' not in df.columns:
     st.error("⚠️ 'Close' column is missing. Cannot predict.")
-elif df['Close'].dropna().empty:
-    st.error("⚠️ No valid closing price data.")
 else:
-    st.success(f"✅ Loaded {len(df)} records for {selected_stock} from {df.index.min().date()} to {df.index.max().date()}")
+    valid_closes = df['Close'].dropna()
 
-    # Show latest price
-    last_valid_close = df['Close'].dropna().iloc[-1]
-    st.metric("Latest Close Price", f"₹{last_valid_close:.2f}")
+    if valid_closes.empty:
+        st.error("⚠️ No valid closing price data found.")
+    else:
+        st.success(f"✅ Loaded {len(df)} records for {selected_stock} from {df.index.min().date()} to {df.index.max().date()}")
 
-    # ---------------------------
-    # 🧠 Model Training
-    # ---------------------------
-    df = df.dropna()
-    df['Day'] = np.arange(len(df))  # Turn dates into integer days
-    X = df[['Day']]
-    y = df['Close']
+        last_valid_close = valid_closes.iloc[-1]
+        st.metric("Latest Close Price", f"₹{last_valid_close:.2f}")
 
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(X, y)
+        # ---------------------------
+        # 🧠 Model Training
+        # ---------------------------
+        df = df.dropna()
+        df['Day'] = np.arange(len(df))  # Turn dates into integer days
+        X = df[['Day']]
+        y = df['Close']
 
-    # Predict next 7 days
-    future_days = 7
-    future_X = pd.DataFrame({'Day': np.arange(len(df), len(df)+future_days)})
-    future_preds = model.predict(future_X)
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(X, y)
 
-    future_dates = [df.index[-1] + timedelta(days=i+1) for i in range(future_days)]
-    pred_df = pd.DataFrame({
-        'Date': future_dates,
-        'Predicted Close Price': future_preds
-    })
+        # Predict next 7 days
+        future_days = 7
+        future_X = pd.DataFrame({'Day': np.arange(len(df), len(df)+future_days)})
+        future_preds = model.predict(future_X)
 
-    st.subheader("📅 Next 7-Day Prediction")
-    st.dataframe(pred_df.set_index('Date').style.format("₹{:.2f}"))
+        future_dates = [df.index[-1] + timedelta(days=i+1) for i in range(future_days)]
+        pred_df = pd.DataFrame({
+            'Date': future_dates,
+            'Predicted Close Price': future_preds
+        })
 
-    # ---------------------------
-    # 📊 Plot Chart
-    # ---------------------------
-    st.subheader("📉 Price Chart: Past + Prediction")
-    fig, ax = plt.subplots()
-    ax.plot(df.index, df['Close'], label='Historical')
-    ax.plot(future_dates, future_preds, label='Predicted', linestyle='--', marker='o')
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Close Price (₹)")
-    ax.set_title(f"{selected_stock} - Price Forecast")
-    ax.legend()
-    plt.xticks(rotation=45)
-    st.pyplot(fig)
+        st.subheader("📅 Next 7-Day Prediction")
+        st.dataframe(pred_df.set_index('Date').style.format("₹{:.2f}"))
+
+        # ---------------------------
+        # 📊 Plot Chart
+        # ---------------------------
+        st.subheader("📉 Price Chart: Past + Prediction")
+        fig, ax = plt.subplots()
+        ax.plot(df.index, df['Close'], label='Historical')
+        ax.plot(future_dates, future_preds, label='Predicted', linestyle='--', marker='o')
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Close Price (₹)")
+        ax.set_title(f"{selected_stock} - Price Forecast")
+        ax.legend()
+        plt.xticks(rotation=45)
+        st.pyplot(fig)

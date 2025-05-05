@@ -40,13 +40,13 @@ def load_data(symbol):
 
 df = load_data(symbol)
 
-if df.empty:
-    st.error("⚠️ Failed to fetch data. Try again later.")
+if df.empty or 'Close' not in df.columns or df['Close'].isna().all():
+    st.error("⚠️ Failed to fetch valid stock data. This might be due to an invalid ticker or no recent data.")
 else:
     st.success(f"Loaded {len(df)} records for {selected_stock}")
-
-    # Display latest price
-    st.metric("Latest Close Price", f"₹{df['Close'].iloc[-1]:.2f}")
+    
+    last_valid_close = df['Close'].dropna().iloc[-1]
+    st.metric("Latest Close Price", f"₹{last_valid_close:.2f}")
 
     # Prepare data
     df['Day'] = np.arange(len(df))

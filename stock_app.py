@@ -63,10 +63,15 @@ else:
 
         last_valid_close = valid_closes.iloc[-1]
 
-        if pd.isna(last_valid_close):
-            st.warning("⚠️ Last closing price is not a number (NaN).")
-        else:
-            st.metric("Latest Close Price", f"₹{last_valid_close:.2f}")
+        # Debug output
+        st.text(f"Raw last_valid_close = {last_valid_close} ({type(last_valid_close)})")
+
+        # 🔒 Safe formatting
+        try:
+            formatted_price = f"₹{float(last_valid_close):.2f}"
+            st.metric("Latest Close Price", formatted_price)
+        except (TypeError, ValueError):
+            st.warning("⚠️ Last closing price could not be formatted.")
 
         # ---------------------------
         # 🧠 Model Training

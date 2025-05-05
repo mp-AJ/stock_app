@@ -62,7 +62,11 @@ else:
         st.success(f"✅ Loaded {len(df)} records for {selected_stock} from {df.index.min().date()} to {df.index.max().date()}")
 
         last_valid_close = valid_closes.iloc[-1]
-        st.metric("Latest Close Price", f"₹{last_valid_close:.2f}")
+
+        if pd.isna(last_valid_close):
+            st.warning("⚠️ Last closing price is not a number (NaN).")
+        else:
+            st.metric("Latest Close Price", f"₹{last_valid_close:.2f}")
 
         # ---------------------------
         # 🧠 Model Training
